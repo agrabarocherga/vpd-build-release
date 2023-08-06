@@ -1,0 +1,94 @@
+build: &build 1287
+# Скачиваются только образы с указанным номером сборки
+images:
+  - name: eds-loader-gateway
+    build: *build
+  - name: eds-file-observer
+  - name: eds-mdb-service
+  - name: eds-flc-service
+  - name: eds-provenance-service
+  - name: eds-dataset-exchange-service
+  - name: eds-load-manager
+  - name: eds-dataset-loader
+    build: *build
+
+# build пишется в поле image.build в чарты перед их упаковкой
+# По умолчанию service.build=*build
+services:
+  - name: eds-common-loader
+    build: 1272
+  - name: eds-criteria-loader
+    build: 1203
+  - name: eds-dataset-exchange-service
+    build: 1050
+  - name: eds-flc-service
+    build: 1171
+  - name: eds-provenance-service
+    build: 1153
+  - name: eds-load-manager
+    build: 1257
+  - name: eds-file-observer
+    build: 1272
+  - name: eds-loader-gateway
+  - name: eds-dlfile-loader
+  - name: eds-ens-loader
+  - name: eds-eshn-loader
+  - name: eds-exc-loader
+  - name: eds-gar-loader
+  - name: eds-ip-loader
+  - name: eds-kkt-loader
+  - name: eds-mdb-service
+  - name: eds-mincif-loader
+  - name: eds-mspf-loader
+  - name: eds-msp-loader
+  - name: eds-ndd-loader
+  - name: eds-ndfl2-loader
+  - name: eds-ndfl3-loader
+  - name: eds-ndfl6-loader
+  - name: eds-ndpi-loader
+  - name: eds-nds-loader
+  - name: eds-news-loader
+  - name: eds-nio-loader
+  - name: eds-npd-loader
+  - name: eds-nt-loader
+  - name: eds-psn-loader
+  - name: eds-rsv-loader
+  - name: eds-sed-loader
+  - name: eds-sno-loader
+  - name: eds-tn-loader
+  - name: eds-ul-loader
+  - name: eds-upload-file-loader
+  - name: eds-us-loader
+  - name: eds-usn-loader
+  - name: eds-zn-loader
+  - name: eds-zt-loader
+
+name: eds-platform-data
+namespace: vpd-inside-stm
+
+docker:
+  registries:
+    local:
+      url: harbor.k8s-dmz.adp.local:80/vpd
+      login:
+      password:
+    production:
+      url: n5201-ais936.dpc.tax.nalog.ru:5000
+
+archives:
+  split: 200
+  images: data-inside
+  charts: &chartsRenameTo data-charts
+
+charts:
+  protocol: https
+  registry: bitbucket.gnivc.ru/scm/cap
+  name: vpd-data-charts
+  branch: master
+  login:
+  token:
+  inner_folder: platform
+  complex: true
+  rename_to: *chartsRenameTo
+  values:
+    - name: values-kpe-inside.yaml
