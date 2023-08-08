@@ -1,16 +1,17 @@
-build: &build 1287
+build: &build 1318
 # Скачиваются только образы с указанным номером сборки
 images:
+  download:
   - name: eds-loader-gateway
-    build: *build
   - name: eds-file-observer
-  - name: eds-mdb-service
   - name: eds-flc-service
-  - name: eds-provenance-service
-  - name: eds-dataset-exchange-service
+  - name: eds-geo-service
   - name: eds-load-manager
   - name: eds-dataset-loader
-    build: *build
+  pass:
+  - name: eds-provenance-service
+  - name: eds-mdb-service
+  - name: eds-dataset-exchange-service
 
 # build пишется в поле image.build в чарты перед их упаковкой
 # По умолчанию service.build=*build

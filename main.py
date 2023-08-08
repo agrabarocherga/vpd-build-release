@@ -101,16 +101,13 @@ def patch_values_yaml(path_to_values_yaml: str, service: dict):
         values_yaml.writelines(values_yaml_in_memory)
 
 
-def pull_images(registry: str, images_dict: dict):
+def pull_images(registry: str, images_dict: dict, build_num: int):
     pulled_images_list = []
-    for image in images_dict:
-        if 'build' in image:
-            name = image['name']
-            tag = image['build']
-            image_fqn = f"{registry}/{name}:{tag}"
-            logging.info(f"Pull image {image_fqn}")
-            shell.shell(f"docker pull {image_fqn} --quiet")
-            pulled_images_list.append(image_fqn)
+    for image in images_dict['download']:
+        image_fqn = f"{registry}/{image['name']}:{build_num}"
+        logging.info(f"Pull image {image_fqn}")
+        shell.shell(f"docker pull {image_fqn} --quiet")
+        pulled_images_list.append(image_fqn)
     return pulled_images_list
 
 
@@ -196,6 +193,8 @@ if __name__ == '__main__':
     services = config['services']
     images = config['images']
     registries = config['docker']['registries']
+    registry_local_url = registries['local']['url']
+    registry_production_url = registries['production']['url']
 
     # Получаем чарты с git-репозитория
     clone_charts(charts)
@@ -218,11 +217,11 @@ if __name__ == '__main__':
     tar_gzip(charts_renamed)
     shutil.rmtree(charts_renamed, ignore_errors=True)
 
-    # Сохраняем docker-образы с указанными номерами сборки
-    pulled_images: list = pull_images(registries['local']['url'], images)
+    # Сохраняем docker-образы из images.download
+    pulled_images: list = pull_images(registry_local_url, images, build)
 
     # Проставляем теги, необходимые для загрузки этих образов в продовую docker registry
-    tagged_images: str = tag_images(pulled_images, registries['production']['url'])
+    tagged_images: str = tag_images(pulled_images, registry_production_url)
 
     # Сохраняем протеженные docker-образы в общий .tar.gz-архив
     save_images(tagged_images, archives['images'])
