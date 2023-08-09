@@ -70,8 +70,8 @@ def clone_charts(charts_dict: dict):
     name = charts_dict['name']
     protocol = charts_dict['protocol']
     registry = charts_dict['registry']
-    login = charts_dict['login']
-    token = charts_dict['token']
+    login = charts['login'] or os.environ['GIT_LOGIN']
+    token = charts['token'] or os.environ['GIT_TOKEN']
     branch = charts_dict['branch']
     git_url = f"{protocol}://{login}:{token}@{registry}/{name}.git"
 
@@ -79,13 +79,17 @@ def clone_charts(charts_dict: dict):
     git.Repo.clone_from(git_url, os.path.join(name), branch=branch)  # progress=CloneProgress()
 
 
-def patch_charts(charts_folder: str, services_dict: dict, *, inner_folder: str = '.', complex_charts: bool = False):
-    if complex_charts:  # Если релиз состоит из нескольких микросервисов
+def patch_charts(charts_dict: dict, services_dict: dict, *, inner_folder: str = False):
+    charts_renamed_str: str = charts_dict['rename_to']
+    if inner_folder:  # Если чарты для нескольких микросервисов/релизов
         for service in services_dict:
-            path_to_values_yaml = os.path.join(charts_folder, inner_folder, 'charts',
+            path_to_values_yaml = os.path.join(charts_renamed_str, inner_folder, 'charts',
                                                service['name'], "values.yaml")
-            # logging.info(f"{path_to_values_yaml=}")
             patch_values_yaml(path_to_values_yaml, service)
+
+    else:  # если чарты для одного микросервиса
+        path_to_values_yaml = os.path.join(charts_renamed_str, 'charts', services_dict['name'], "values.yaml")
+        patch_values_yaml(path_to_values_yaml, services_dict)
 
 
 def patch_values_yaml(path_to_values_yaml: str, service: dict):
@@ -93,9 +97,7 @@ def patch_values_yaml(path_to_values_yaml: str, service: dict):
         values_yaml_in_memory = []
         while line := values_yaml.readline():
             if line.find('pre-ci') >= 0:
-                logging.info(f"before {line=}")
                 line = line.replace('pre-ci', str(service['build']))
-                logging.info(f"after {line=}")
             values_yaml_in_memory.append(line)
     with open(path_to_values_yaml, 'w') as values_yaml:
         values_yaml.writelines(values_yaml_in_memory)
@@ -207,7 +209,7 @@ if __name__ == '__main__':
     os.rename(charts_name, charts_renamed)
 
     # Патчим номера сборок в чартах (pre-ci => Drone CI build number)
-    patch_charts(charts_renamed, services, inner_folder=charts['inner_folder'], complex_charts=charts['complex'])
+    patch_charts(charts, services, inner_folder=charts['inner_folder'])
 
     # Очищаем чарты от БД гита, на проде она не нужна
     logging.info("Clean .git database from charts")
@@ -217,6 +219,7 @@ if __name__ == '__main__':
     tar_gzip(charts_renamed)
     shutil.rmtree(charts_renamed, ignore_errors=True)
 
+    images_to_pull = scan_charts_for_images()
     # Сохраняем docker-образы из images.download
     pulled_images: list = pull_images(registry_local_url, images, build)
 

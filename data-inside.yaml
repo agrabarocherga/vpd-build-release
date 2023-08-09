@@ -89,7 +89,6 @@ charts:
   login:
   token:
   inner_folder: platform
-  complex: true
   rename_to: *chartsRenameTo
   values:
     - name: values-kpe-inside.yaml
